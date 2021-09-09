@@ -2183,11 +2183,14 @@ void tagswapmon(const Arg *arg)
 
 	unsigned int ep = selmon->edgepx,
 		     gp = selmon->gappx;
-	int nm = selmon->nmaster;
+	int nm = selmon->nmaster,
+	    sb = selmon->showbar;
 	float mf = selmon->mfact;
 	const Layout *l1 = selmon->lt[selmon->sellt],
 		     *l2 = selmon->lt[selmon->sellt^1];
 
+	selmon->showbar = selmon->pertag->showbars[selmon->pertag->curtag] =
+		m->showbar;
 	selmon->edgepx = selmon->pertag->edgepxs[selmon->pertag->curtag] = 
 		m->edgepx;
 	selmon->gappx = selmon->pertag->gappxs[selmon->pertag->curtag] =
@@ -2203,6 +2206,7 @@ void tagswapmon(const Arg *arg)
 		selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt^1] =
 		m->lt[m->sellt^1];
 
+	m->showbar = m->pertag->showbars[m->pertag->curtag] = sb;
 	m->edgepx = m->pertag->edgepxs[m->pertag->curtag] = ep;
 	m->gappx = m->pertag->gappxs[m->pertag->curtag] = gp;
 	m->nmaster = m->pertag->nmasters[m->pertag->curtag] = nm;
