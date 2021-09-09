@@ -240,6 +240,7 @@ static void spawn(const Arg *arg);
 static void tag(const Arg *arg);
 static void tagmon(const Arg *arg);
 static void tile(Monitor *);
+static void tagswapmon(const Arg *arg);
 static void togglebar(const Arg *arg);
 static void togglefloating(const Arg *arg);
 static void toggletag(const Arg *arg);
@@ -318,8 +319,8 @@ static Colormap cmap;
 struct Pertag {
 	unsigned int curtag, prevtag;
 	int nmasters[LENGTH(tags) + 1];
-	int edgepx[LENGTH(tags) + 1];
-	int gappx[LENGTH(tags) + 1];
+	int edgepxs[LENGTH(tags) + 1];
+	int gappxs[LENGTH(tags) + 1];
 	float mfacts[LENGTH(tags) + 1];
 	unsigned int sellts[LENGTH(tags) + 1];
 	const Layout *ltidxs[LENGTH(tags) + 1][2];
@@ -926,8 +927,8 @@ createmon(void)
 
 	for (i = 0; i <= LENGTH(tags); i++) {
 		m->pertag->nmasters[i] = m->nmaster;
-		m->pertag->edgepx[i] = m->edgepx;
-		m->pertag->gappx[i] = m->gappx;
+		m->pertag->edgepxs[i] = m->edgepx;
+		m->pertag->gappxs[i] = m->gappx;
 		m->pertag->mfacts[i] = m->mfact;
 
 		m->pertag->ltidxs[i][0] = m->lt[0];
@@ -943,14 +944,14 @@ createmon(void)
 void
 decedge(const Arg *arg)
 {
-	selmon->edgepx = selmon->pertag->edgepx[selmon->pertag->curtag] = MAX(selmon->edgepx - arg->i, 0);
+	selmon->edgepx = selmon->pertag->edgepxs[selmon->pertag->curtag] = MAX(selmon->edgepx - arg->i, 0);
 	arrange(selmon);
 }
 
 void
 decgap(const Arg *arg)
 {
-	selmon->gappx = selmon->pertag->gappx[selmon->pertag->curtag] = MAX(selmon->gappx - arg->i, 0);
+	selmon->gappx = selmon->pertag->gappxs[selmon->pertag->curtag] = MAX(selmon->gappx - arg->i, 0);
 	arrange(selmon);
 }
 
@@ -1081,16 +1082,14 @@ drawbar(Monitor *m)
 	x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->ltsymbol, 0);
 
 	if ((w = m->ww - sw - x) > bh) {
+			drw_setscheme(drw, scheme[m == selmon ? SchemeSel : SchemeNorm]);
 		if (m->sel) {
 			int tw = m->ww - sw - x;
 			int mid = (tw - (int)TEXTW(m->sel->name)) / 2;
 			mid = mid < 0 ? lrpad / 2 : mid;
-			drw_setscheme(drw, scheme[m == selmon ? SchemeSel : SchemeNorm]);
 			drw_text(drw, x, 0, w, bh, mid, m->sel->name, 0);
-		} else {
-			drw_setscheme(drw, scheme[SchemeNorm]);
+		} else
 			drw_rect(drw, x, 0, w, bh, 1, 1);
-		}
 	}
 	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
 }
@@ -1312,13 +1311,13 @@ grabkeys(void)
 void
 incedge(const Arg *arg)
 {
-	selmon->edgepx = selmon->pertag->edgepx[selmon->pertag->curtag] = MIN(selmon->edgepx + arg->i, 300);
+	selmon->edgepx = selmon->pertag->edgepxs[selmon->pertag->curtag] = MIN(selmon->edgepx + arg->i, 300);
 	arrange(selmon);
 }
 
 void incgap(const Arg *arg)
 {
-	selmon->gappx = selmon->pertag->gappx[selmon->pertag->curtag] = MIN(selmon->gappx + arg->i, 100);
+	selmon->gappx = selmon->pertag->gappxs[selmon->pertag->curtag] = MIN(selmon->gappx + arg->i, 100);
 	arrange(selmon);
 }
 
@@ -2123,6 +2122,103 @@ tile(Monitor *m)
 	}
 }
 
+void tagswapmon(const Arg *arg)
+{
+	Monitor *m;
+	Client *c, *sc = NULL, *mc = NULL, *next,
+		*ssc, *msc;
+
+	if (!mons->next)
+		return;
+
+	m = dirtomon(arg->i);
+
+	ssc = selmon->sel; msc = m->sel;
+
+	for (c = selmon->clients; c; c = next) {
+		next = c->next;
+		if (!ISVISIBLE(c))
+			continue;
+		unfocus(c, 1);
+		detach(c);
+		detachstack(c);
+		c->next = sc;
+		sc = c;
+	}
+
+	for (c = m->clients; c; c = next) {
+		next = c->next;
+		if (!ISVISIBLE(c))
+			continue;
+		unfocus(c, 1);
+		detach(c);
+		detachstack(c);
+		c->next = mc;
+		mc = c;
+	}
+
+	for (c = sc; c; c = next) {
+		next = c->next;
+		c->mon = m;
+		c->tags = m->tagset[m->seltags];
+		attach(c);
+		attachstack(c);
+		if (c->isfullscreen) {
+			resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
+			XRaiseWindow(dpy, c->win);
+		}
+	}
+
+	for (c = mc; c; c = next) {
+		next = c->next;
+		c->mon = selmon;
+		c->tags = selmon->tagset[selmon->seltags];
+		attach(c);
+		attachstack(c);
+		if (c->isfullscreen) {
+			resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
+			XRaiseWindow(dpy, c->win);
+		}
+	}
+
+	unsigned int ep = selmon->edgepx,
+		     gp = selmon->gappx;
+	int nm = selmon->nmaster;
+	float mf = selmon->mfact;
+	const Layout *l1 = selmon->lt[selmon->sellt],
+		     *l2 = selmon->lt[selmon->sellt^1];
+
+	selmon->edgepx = selmon->pertag->edgepxs[selmon->pertag->curtag] = 
+		m->edgepx;
+	selmon->gappx = selmon->pertag->gappxs[selmon->pertag->curtag] =
+		m->gappx;
+	selmon->nmaster = selmon->pertag->nmasters[selmon->pertag->curtag] =
+		m->nmaster;
+	selmon->mfact = selmon->pertag->mfacts[selmon->pertag->curtag] =
+		m->mfact;
+	selmon->lt[selmon->sellt] =
+		selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt] =
+		m->lt[m->sellt];
+	selmon->lt[selmon->sellt^1] =
+		selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt^1] =
+		m->lt[m->sellt^1];
+
+	m->edgepx = m->pertag->edgepxs[m->pertag->curtag] = ep;
+	m->gappx = m->pertag->gappxs[m->pertag->curtag] = gp;
+	m->nmaster = m->pertag->nmasters[m->pertag->curtag] = nm;
+	m->mfact = m->pertag->mfacts[m->pertag->curtag] = mf;
+	m->lt[m->sellt] = m->pertag->ltidxs[m->pertag->curtag][m->sellt] = l1;
+	m->lt[m->sellt^1] = m->pertag->ltidxs[m->pertag->curtag][m->sellt^1] = l2;
+
+	focus(msc);
+	focusmon(arg);
+	focus(ssc);
+	Arg invdir = { .i = arg->i };
+	focusmon(&invdir);
+
+	arrange(NULL);
+}
+
 void
 togglebar(const Arg *arg)
 {
@@ -2182,8 +2278,8 @@ toggleview(const Arg *arg)
 		}
 
 		selmon->nmaster = selmon->pertag->nmasters[selmon->pertag->curtag];
-		selmon->edgepx = selmon->pertag->edgepx[selmon->pertag->curtag];
-		selmon->gappx = selmon->pertag->gappx[selmon->pertag->curtag];
+		selmon->edgepx = selmon->pertag->edgepxs[selmon->pertag->curtag];
+		selmon->gappx = selmon->pertag->gappxs[selmon->pertag->curtag];
 		selmon->mfact = selmon->pertag->mfacts[selmon->pertag->curtag];
 		selmon->sellt = selmon->pertag->sellts[selmon->pertag->curtag];
 		selmon->lt[selmon->sellt] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt];
@@ -2529,8 +2625,8 @@ view(const Arg *arg)
 	}
 
 	selmon->nmaster = selmon->pertag->nmasters[selmon->pertag->curtag];
-	selmon->edgepx = selmon->pertag->edgepx[selmon->pertag->curtag];
-	selmon->gappx = selmon->pertag->gappx[selmon->pertag->curtag];
+	selmon->edgepx = selmon->pertag->edgepxs[selmon->pertag->curtag];
+	selmon->gappx = selmon->pertag->gappxs[selmon->pertag->curtag];
 	selmon->mfact = selmon->pertag->mfacts[selmon->pertag->curtag];
 	selmon->sellt = selmon->pertag->sellts[selmon->pertag->curtag];
 	selmon->lt[selmon->sellt] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt];

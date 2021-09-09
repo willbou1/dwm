@@ -43,6 +43,7 @@ static const Rule rules[] = {
 	 */
 	/* class                   instance           title                       tags mask     isfloating   isterminal     noswallow      monitor */
 	{ "URxvt",                 NULL,              NULL,                       0,            0,            1,            0,            -1 },
+	{ "Alacritty",                 NULL,              NULL,                       0,            0,            1,            0,            -1 },
 	{ "Virt-manager",          NULL,              "Virtual Machine Manager",  vmTagMask,    0,            1,            0,            -1 },
 	{ "Remote-viewer",         NULL,              NULL,                       vmTagMask,    0,            0,            0,            -1 },
 	{ "mpv",                   NULL,              NULL,                       mediaTagMask, 0,            0,            0,            -1 },
@@ -50,7 +51,7 @@ static const Rule rules[] = {
 	{ "Deluge-gtk",            NULL,              NULL,                       utilsTagMask, 0,            0,            0,            -1 },
 	{ "Catia",                 NULL,              NULL,                       utilsTagMask, 0,            0,            0,            -1 },
 	{ "Cadence",               NULL,              NULL,                       utilsTagMask, 0,            0,            0,            -1 },
-	{ "Pavucontrol",           NULL,              NULL,                       utilsTagMask, 0,            0,            0,            -1 },
+	{ NULL,           NULL,              "ncpamixer",                       utilsTagMask, 0,            0,            0,            -1 },
 	{ "FLTK",                  NULL,              NULL,                       utilsTagMask, 1,            0,            0,            -1 },
 };
 
@@ -85,7 +86,7 @@ static const Layout layouts[] = {
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = { "j4-dmenu-desktop", "--dmenu=/home/william/.config/dmenu/dmenuw.sh", "--term='urxvt -e'", "--display-binary", "--no-generic", NULL };
 static const char *sdmenucmd[] = { "sudo", "-A", "j4-dmenu-desktop", "--dmenu=/home/william/.config/dmenu/dmenuw.sh", "--term='urxvt -e'", "--display-binary", "--no-generic", NULL };
-static const char *termcmd[]  = { "urxvt", NULL };
+static const char *termcmd[]  = { "alacritty", NULL };
 static const char *browsercmd[] = { "brave", NULL };
 static const char *volupcmd[] = { "amixer", "-D", "pulse", "sset", "Master", "5%+", NULL };
 static const char *voldowncmd[] = { "amixer", "-D", "pulse", "sset", "Master", "5%-", NULL };
@@ -114,6 +115,7 @@ static Key keys[] = {
 	{ 0,                            XF86XK_AudioPrev,      spawn,          {.v = mediaprev } },
 	{ MODKEY|ShiftMask,             XK_s,      spawn,          {.v = screencapcmd } },
 	{ MODKEY,                       XK_b,      spawn,          {.v = browsercmd } },
+	{ MODKEY|ShiftMask,                       XK_b,      togglebar,          NULL},
 	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
 	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
 	{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },
@@ -141,11 +143,15 @@ static Key keys[] = {
 	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+	{ MODKEY, XK_o, tagswapmon, {.i = -1} },
+//{ MODKEY|ShiftMask|ControlMask, XK_comma,  tagmon,         {.i = -1 } },
+//	{ MODKEY|ShiftMask|ControlMask,	XK_period, tagmon,         {.i = +1 } },
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
 	TAGKEYS(                        XK_4,                      3)
 	TAGKEYS(                        XK_5,                      4)
+	TAGKEYS(                        XK_6,                      5)
 	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
 	{ MODKEY|ControlMask|ShiftMask, XK_q,      quit,           {1} },
 };
