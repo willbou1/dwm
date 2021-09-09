@@ -2220,6 +2220,12 @@ void tagswapmon(const Arg *arg)
 	Arg invdir = { .i = arg->i };
 	focusmon(&invdir);
 
+	updatebarpos(selmon);
+	XMoveResizeWindow(dpy, selmon->barwin, selmon->wx, selmon->by, selmon->ww, bh);
+
+	updatebarpos(m);
+	XMoveResizeWindow(dpy, m->barwin, m->wx, m->by, m->ww, bh);
+
 	arrange(NULL);
 }
 
