@@ -51,6 +51,7 @@ static const Rule rules[] = {
 	{ "Deluge-gtk",            NULL,              NULL,                       utilsTagMask, 0,            0,            0,            -1 },
 	{ "Catia",                 NULL,              NULL,                       utilsTagMask, 0,            0,            0,            -1 },
 	{ "Cadence",               NULL,              NULL,                       utilsTagMask, 0,            0,            0,            -1 },
+	{ "corectrl",               NULL,              NULL,                       utilsTagMask, 0,            0,            0,            -1 },
 	{ NULL,           NULL,              "ncpamixer",                       utilsTagMask, 0,            0,            0,            -1 },
 	{ "FLTK",                  NULL,              NULL,                       utilsTagMask, 1,            0,            0,            -1 },
 };
@@ -87,7 +88,8 @@ static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() 
 static const char *dmenucmd[] = { "j4-dmenu-desktop", "--dmenu=/home/william/.config/dmenu/dmenuw.sh", "--term='urxvt -e'", "--display-binary", "--no-generic", NULL };
 static const char *sdmenucmd[] = { "sudo", "-A", "j4-dmenu-desktop", "--dmenu=/home/william/.config/dmenu/dmenuw.sh", "--term='urxvt -e'", "--display-binary", "--no-generic", NULL };
 static const char *termcmd[]  = { "alacritty", NULL };
-static const char *browsercmd[] = { "brave", NULL };
+static const char *browsercmd[] = { "chromium", NULL };
+static const char *i2pbrowsercmd[] = { "i2p_chromium", NULL };
 static const char *volupcmd[] = { "amixer", "-D", "pulse", "sset", "Master", "5%+", NULL };
 static const char *voldowncmd[] = { "amixer", "-D", "pulse", "sset", "Master", "5%-", NULL };
 static const char *mutecmd[] = { "amixer", "-D", "pulse", "set", "Master", "toggle", NULL };
@@ -115,6 +117,7 @@ static Key keys[] = {
 	{ 0,                            XF86XK_AudioPrev,      spawn,          {.v = mediaprev } },
 	{ MODKEY|ShiftMask,             XK_s,      spawn,          {.v = screencapcmd } },
 	{ MODKEY,                       XK_b,      spawn,          {.v = browsercmd } },
+	{ MODKEY|ShiftMask|ControlMask,                       XK_b,      spawn,          {.v = i2pbrowsercmd } },
 	{ MODKEY|ShiftMask,                       XK_b,      togglebar,          NULL},
 	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
 	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
